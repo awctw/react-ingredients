@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 
 import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
@@ -8,22 +8,50 @@ function Ingredients() {
   const [userIngredients, setUserIngredients] = useState([]);
 
   function addIngredientHandler(ingredient) {
-    setUserIngredients((prevIngredients) => [
-      ...prevIngredients,
+    fetch(
+      "https://r eact-ingredients-cd753-default-rtdb.firebaseio.com/ingredients.json",
       {
-        id: Math.random().toString,
-        ...ingredient,
-      },
-    ]);
+        method: "POST",
+        body: JSON.stringify(ingredient),
+        headers: { "Content-Type": "application/json" },
+      }
+    )
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        setUserIngredients((prevIngredients) => [
+          ...prevIngredients,
+          {
+            id: responseData.name,
+            ...ingredient,
+          },
+        ]);
+      });
   }
+
+  function removeIngredientHandler(ingredientId) {
+    setUserIngredients((prevIngredients) =>
+      prevIngredients.filter(
+        (prevIngredient) => prevIngredient.id !== ingredientId
+      )
+    );
+  }
+
+  const filteredIngredientsHandler = useCallback((filteredIngredients) => {
+    setUserIngredients(filteredIngredients);
+  }, []);
 
   return (
     <div className="App">
       <IngredientForm onAddIngredient={addIngredientHandler} />
 
       <section>
-        <Search />
-        <IngredientList ingredients={userIngredients} onRemoveItem={() => {}} />
+        <Search onLoadedIngredients={filteredIngredientsHandler} />
+        <IngredientList
+          ingredients={userIngredients}
+          onRemoveItem={removeIngredientHandler}
+        />
       </section>
     </div>
   );
